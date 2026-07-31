@@ -1,0 +1,32 @@
+.top-bar {
+  display: flex;
+  align-items: center;
+  height: calc(28px * var(--fq-scale));
+  padding-right: calc(8px * var(--fq-scale));
+  background: var(--fq-surface);
+  border-bottom: 1px solid var(--fq-border);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.top-bar-spacer {
+  flex: 1;
+  height: 100%;
+}
+
+.top-bar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6px * var(--fq-scale));
+  height: calc(24px * var(--fq-scale));
+  font-size: calc(12px * var(--fq-scale));
+}
+
+.top-bar-button .anticon {
+  font-size: calc(13px * var(--fq-scale));
+}
+
+.top-bar-caret {
+  font-size: calc(10px * var(--fq-scale));
+  color: var(--fq-text-muted);
+}

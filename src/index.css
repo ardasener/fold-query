@@ -1,0 +1,14 @@
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  /* Inherits the palette CSS variables set on the document root. */
+  background: var(--fq-bg);
+  color: var(--fq-text);
+}

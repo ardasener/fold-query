@@ -1,0 +1,19 @@
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--fq-surface);
+}
+
+.chat-messages {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 16px 8px;
+}
+
+.chat-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--fq-border);
+  padding: 8px 12px 12px;
+}

@@ -1,0 +1,34 @@
+.python-error-body {
+  margin-bottom: 8px;
+}
+
+.python-error-detail {
+  color: var(--fq-text-secondary);
+}
+
+.python-error-alert {
+  margin-bottom: 16px;
+}
+
+.python-error-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.python-error-commands {
+  margin: 4px 0 0;
+  padding: 8px 12px;
+  background: var(--fq-surface);
+  border: 1px solid var(--fq-border);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.python-error-note {
+  color: var(--fq-text-muted);
+  font-size: 12px;
+  margin: 4px 0 0;
+}

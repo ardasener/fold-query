@@ -1,0 +1,37 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--fq-bg);
+  color: var(--fq-text);
+}
+
+.app-split {
+  flex: 1;
+  min-height: 0;
+}
+
+.split-handle {
+  width: 5px;
+  margin: 0 -2px;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.split-handle:hover,
+.split-handle:active {
+  background: var(--fq-primary);
+}
+
+.editor-stack {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor-stack > .code-editor {
+  flex: 1;
+  min-height: 0;
+}
