@@ -14,6 +14,7 @@ import Pane from "./components/Pane";
 import CodeEditor from "./components/code-editor/CodeEditor";
 import ChatPanel from "./components/chat/ChatPanel";
 import ViewerPanel from "./components/viewer/ViewerPanel";
+import ExportButton from "./components/viewer/ExportButton";
 import PrintPreview from "./components/print/PrintPreview";
 import SettingsModal from "./components/settings/SettingsModal";
 import ProjectEditModal from "./components/projects/ProjectEditModal";
@@ -114,7 +115,8 @@ function App() {
 
   const run = useCallback(async (sourceOverride?: string) => {
     if (!isReady || running) return;
-    const sourceToRun = sourceOverride ?? source;
+    // Guard against callers accidentally passing a non-string (e.g. a click event).
+    const sourceToRun = typeof sourceOverride === "string" ? sourceOverride : source;
     setRunning(true);
     try {
       const result = await invoke<ScriptResult>("run_cad_script", { source: sourceToRun });
@@ -367,6 +369,16 @@ function App() {
                 switchIcon={rightIsViewer ? <PrinterOutlined /> : <EyeOutlined />}
                 switchTooltip={rightIsViewer ? "Switch to Print Preview" : "Switch to 3D View"}
                 onSwitch={() => setRightView(rightIsViewer ? "print" : "viewer")}
+                extra={
+                  rightIsViewer ? (
+                    <ExportButton
+                      projectName={
+                        projects.find((p) => p.id === activeProjectId)?.name ?? ""
+                      }
+                      objects={lastRun?.objects ?? null}
+                    />
+                  ) : undefined
+                }
               >
                 <div className={rightIsViewer ? "pane-view" : "pane-view pane-view-hidden"}>
                   <ViewerPanel objects={lastRun?.objects ?? null} />

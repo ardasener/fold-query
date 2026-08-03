@@ -1,30 +1,51 @@
+use std::path::{Path, PathBuf};
+
 use async_openai::config::OpenAIConfig;
 use async_openai::types::chat::{
     ChatCompletionRequestMessage, ChatCompletionRequestUserMessage,
     ChatCompletionRequestUserMessageContent, CreateChatCompletionRequestArgs,
 };
 use async_openai::Client as OpenAIClient;
-use keyring::Entry;
+use tauri::{AppHandle, Manager};
 
-const KEYRING_SERVICE: &str = "com.foldquery.app";
-const KEYRING_USER: &str = "api_key";
+const KEY_FILE: &str = "api_key";
 
-pub fn store_api_key(key: &str) -> Result<(), String> {
-    let entry = Entry::new(KEYRING_SERVICE, KEYRING_USER).map_err(|e| e.to_string())?;
-    entry
-        .set_password(key)
-        .map_err(|e| format!("Failed to store the API key in the keychain: {e}"))
+fn key_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Could not resolve the app data directory: {e}"))?;
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Could not create data dir: {e}"))?;
+    Ok(dir.join(KEY_FILE))
 }
 
-pub fn get_api_key() -> Result<String, String> {
-    let entry = Entry::new(KEYRING_SERVICE, KEYRING_USER).map_err(|e| e.to_string())?;
-    entry
-        .get_password()
-        .map_err(|e| format!("Failed to read the API key from the keychain: {e}"))
+fn write_key_file(path: &Path, key: &str) -> Result<(), String> {
+    let tmp = PathBuf::from(format!("{}.tmp", path.display()));
+    std::fs::write(&tmp, key.as_bytes())
+        .map_err(|e| format!("Could not write the API key: {e}"))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&tmp, std::fs::Permissions::from_mode(0o600))
+            .map_err(|e| format!("Could not set key file permissions: {e}"))?;
+    }
+    std::fs::rename(&tmp, path).map_err(|e| format!("Could not finalize the API key file: {e}"))?;
+    Ok(())
 }
 
-pub fn has_api_key() -> bool {
-    get_api_key().is_ok()
+pub fn store_api_key(app: &AppHandle, key: &str) -> Result<(), String> {
+    let path = key_path(app)?;
+    write_key_file(&path, key)
+}
+
+pub fn get_api_key(app: &AppHandle) -> Result<String, String> {
+    let path = key_path(app)?;
+    std::fs::read_to_string(&path)
+        .map_err(|_| "No API key is configured. Add one in Settings → AI Provider.".to_string())
+}
+
+pub fn has_api_key(app: &AppHandle) -> bool {
+    get_api_key(app).is_ok()
 }
 
 #[derive(serde::Deserialize)]
@@ -75,21 +96,25 @@ pub async fn test_provider(input: ProviderInput) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use keyring::Entry;
+    use super::*;
 
     #[test]
-    fn keychain_persists_across_entries() {
-        // Simulates save (entry A) then read-back (entry B) as separate objects.
-        // Guards against the keyring mock-store fallback (no native features),
-        // which keeps no state between Entry instances.
-        let service = "com.foldquery.app.test";
-        let account = "probe";
-        let _ = Entry::new(service, account).unwrap().delete_credential();
-        let write = Entry::new(service, account).unwrap();
-        write.set_password("secret-123").unwrap();
-        let read = Entry::new(service, account).unwrap();
-        let got = read.get_password();
-        assert_eq!(got.unwrap(), "secret-123");
-        let _ = Entry::new(service, account).unwrap().delete_credential();
+    fn key_file_roundtrip() {
+        let dir = std::env::temp_dir().join(format!("foldquery-key-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("api_key");
+
+        write_key_file(&path, "secret-123").unwrap();
+        let read = std::fs::read_to_string(&path).unwrap();
+        assert_eq!(read, "secret-123");
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+            assert_eq!(mode, 0o600);
+        }
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

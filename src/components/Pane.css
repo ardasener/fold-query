@@ -33,6 +33,12 @@
   align-items: center;
 }
 
+.pane-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .pane-switch {
   color: var(--fq-text-muted);
 }

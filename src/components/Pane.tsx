@@ -8,10 +8,12 @@ interface PaneProps {
   switchIcon: ReactNode;
   switchTooltip: string;
   onSwitch: () => void;
+  /** Optional actions rendered in the header before the switch icon. */
+  extra?: ReactNode;
   children: ReactNode;
 }
 
-function Pane({ label, icon, switchIcon, switchTooltip, onSwitch, children }: PaneProps) {
+function Pane({ label, icon, switchIcon, switchTooltip, onSwitch, extra, children }: PaneProps) {
   return (
     <section className="pane">
       <header className="pane-header">
@@ -19,16 +21,19 @@ function Pane({ label, icon, switchIcon, switchTooltip, onSwitch, children }: Pa
           <span className="pane-label-icon">{icon}</span>
           {label}
         </span>
-        <Tooltip title={switchTooltip}>
-          <Button
-            type="text"
-            size="small"
-            className="pane-switch"
-            icon={switchIcon}
-            onClick={onSwitch}
-            aria-label={switchTooltip}
-          />
-        </Tooltip>
+        <span className="pane-actions">
+          {extra}
+          <Tooltip title={switchTooltip}>
+            <Button
+              type="text"
+              size="small"
+              className="pane-switch"
+              icon={switchIcon}
+              onClick={onSwitch}
+              aria-label={switchTooltip}
+            />
+          </Tooltip>
+        </span>
       </header>
       <div className="pane-content">{children}</div>
     </section>

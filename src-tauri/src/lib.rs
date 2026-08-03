@@ -1,4 +1,5 @@
 mod agent;
+mod download;
 mod llm;
 mod project;
 mod provider;
@@ -34,22 +35,21 @@ fn exit_app(app: AppHandle) {
 }
 
 #[tauri::command]
-async fn test_provider(app: AppHandle, input: provider::ProviderInput) -> Result<(), String> {
-    let _ = app; // available for future use (e.g. logging)
+async fn test_provider(input: provider::ProviderInput) -> Result<(), String> {
     provider::test_provider(input).await
 }
 
 #[tauri::command]
-fn save_provider(input: provider::ProviderInput) -> Result<(), String> {
-    provider::store_api_key(input.key.trim())?;
+fn save_provider(app: AppHandle, input: provider::ProviderInput) -> Result<(), String> {
+    provider::store_api_key(&app, input.key.trim())?;
     // Verify the write by reading back, so the UI never reports success
     // while the key is actually unusable.
-    provider::get_api_key().map(|_| ())
+    provider::get_api_key(&app).map(|_| ())
 }
 
 #[tauri::command]
-fn get_provider_status() -> Result<bool, String> {
-    Ok(provider::has_api_key())
+fn get_provider_status(app: AppHandle) -> Result<bool, String> {
+    Ok(provider::has_api_key(&app))
 }
 
 #[tauri::command]
@@ -100,6 +100,17 @@ async fn delete_project(app: AppHandle, id: String) -> Result<(), String> {
         .map_err(|e| e.to_string())?
 }
 
+#[tauri::command]
+async fn write_downloads_file(
+    app: AppHandle,
+    file_name: String,
+    data: Vec<u8>,
+) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || download::write_downloads_file(&app, &file_name, data))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -122,6 +133,7 @@ pub fn run() {
             save_project_source,
             rename_project,
             delete_project,
+            write_downloads_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

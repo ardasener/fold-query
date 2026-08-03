@@ -228,7 +228,7 @@ pub struct ChatInput {
 }
 
 pub async fn chat_message(app: AppHandle, input: ChatInput) -> Result<(), String> {
-    let api_key = provider::get_api_key()?;
+    let api_key = provider::get_api_key(&app)?;
     let budget = clamp_budget(input.context_budget);
 
     let state = app.state::<AgentState>();

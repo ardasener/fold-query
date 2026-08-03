@@ -74,7 +74,7 @@ function TopBar({
           type="text"
           icon={<CaretRightOutlined />}
           className="top-bar-button"
-          onClick={onRun}
+          onClick={() => onRun()}
           disabled={!canRun}
           loading={running}
           aria-label="Run script"
