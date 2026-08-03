@@ -2,6 +2,12 @@
   height: 100%;
 }
 
+/* The cm-theme wrapper has no height of its own; constraining it lets the
+   editor's height:100% resolve and the scroller scroll internally. */
+.code-editor .cm-theme {
+  height: 100%;
+}
+
 .code-editor .cm-editor {
   height: 100%;
 }

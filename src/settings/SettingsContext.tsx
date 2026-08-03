@@ -27,12 +27,29 @@ export const EDITOR_FONT_OPTIONS: { id: EditorFontId; name: string }[] = [
 export const EDITOR_SIZE_MIN = 8;
 export const EDITOR_SIZE_MAX = 24;
 
+export const DEFAULT_PROVIDER_URL = "https://api.openai.com/v1";
+
+export interface ProviderSettings {
+  url: string;
+  model: string;
+}
+
+export const HISTORY_BUDGET_DEFAULT = 30_000;
+export const HISTORY_BUDGET_MIN = 4_000;
+export const HISTORY_BUDGET_MAX = 200_000;
+
+export function clampHistoryBudget(value: number): number {
+  return Math.min(HISTORY_BUDGET_MAX, Math.max(HISTORY_BUDGET_MIN, Math.round(value)));
+}
+
 export interface Settings {
   themeId: string;
   uiFont: UiFontId;
   uiScale: number;
   editorFont: EditorFontId;
   editorSize: number;
+  historyCharBudget: number;
+  provider: ProviderSettings;
 }
 
 const DEFAULTS: Settings = {
@@ -41,6 +58,8 @@ const DEFAULTS: Settings = {
   uiScale: UI_SCALE_DEFAULT,
   editorFont: "fira-code",
   editorSize: 13,
+  historyCharBudget: HISTORY_BUDGET_DEFAULT,
+  provider: { url: DEFAULT_PROVIDER_URL, model: "" },
 };
 
 const STORAGE_KEY = "foldquery-settings";
@@ -82,6 +101,20 @@ function loadSettings(): Settings {
         typeof parsed.editorSize === "number" && Number.isFinite(parsed.editorSize)
           ? clampSize(parsed.editorSize)
           : DEFAULTS.editorSize,
+      historyCharBudget:
+        typeof parsed.historyCharBudget === "number" && Number.isFinite(parsed.historyCharBudget)
+          ? clampHistoryBudget(parsed.historyCharBudget)
+          : DEFAULTS.historyCharBudget,
+      provider: {
+        url:
+          typeof parsed.provider?.url === "string" && parsed.provider.url.trim().length > 0
+            ? parsed.provider.url
+            : DEFAULTS.provider.url,
+        model:
+          typeof parsed.provider?.model === "string"
+            ? parsed.provider.model
+            : DEFAULTS.provider.model,
+      },
     };
   } catch {
     return DEFAULTS;

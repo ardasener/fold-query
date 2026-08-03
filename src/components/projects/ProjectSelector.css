@@ -1,0 +1,66 @@
+.project-popover {
+  width: 280px;
+}
+
+.project-search-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.project-list {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.project-empty {
+  padding: 12px 4px;
+  text-align: center;
+  color: var(--fq-text-muted);
+  font-size: 13px;
+}
+
+.project-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  padding: 2px 4px 2px 8px;
+}
+
+.project-row:hover {
+  background: var(--fq-surface-alt);
+}
+
+.project-row-active {
+  background: var(--fq-surface-alt);
+}
+
+.project-row-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: var(--fq-text);
+  font-size: 13px;
+}
+
+.project-row-icon {
+  color: var(--fq-text-muted);
+  flex-shrink: 0;
+}
+
+.project-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

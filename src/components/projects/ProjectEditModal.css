@@ -1,0 +1,26 @@
+.edit-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.edit-label {
+  min-width: 44px;
+  color: var(--fq-text);
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.edit-danger {
+  border-top: 1px solid var(--fq-border);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

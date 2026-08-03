@@ -6,18 +6,20 @@ import {
   MessageOutlined,
   PrinterOutlined,
 } from "@ant-design/icons";
+import { uniqueNamesGenerator, adjectives, animals } from "unique-names-generator";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import TopBar from "./components/TopBar";
 import Pane from "./components/Pane";
 import CodeEditor from "./components/code-editor/CodeEditor";
-import RunOutput from "./components/code-editor/RunOutput";
 import ChatPanel from "./components/chat/ChatPanel";
 import ViewerPanel from "./components/viewer/ViewerPanel";
 import PrintPreview from "./components/print/PrintPreview";
 import SettingsModal from "./components/settings/SettingsModal";
+import ProjectEditModal from "./components/projects/ProjectEditModal";
 import PythonSetupModal, { type SetupStep } from "./components/python/PythonSetupModal";
 import PythonErrorModal from "./components/python/PythonErrorModal";
+import type { ProjectData, ProjectInfo } from "./types/project";
 import type {
   MissingComponent,
   ScriptResult,
@@ -39,6 +41,9 @@ result = (
 show_object(result)
 `;
 
+const generateProjectName = () =>
+  uniqueNamesGenerator({ dictionaries: [adjectives, animals], separator: "-" });
+
 type PythonPhase = "checking" | "setup" | "error" | "ready";
 type LeftView = "editor" | "chat";
 type RightView = "viewer" | "print";
@@ -57,11 +62,116 @@ function App() {
   const [running, setRunning] = useState(false);
   const [lastRun, setLastRun] = useState<ScriptResult | null>(null);
 
+  const [projects, setProjects] = useState<ProjectInfo[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [editTarget, setEditTarget] = useState<ProjectInfo | null>(null);
+  const [loadedChat, setLoadedChat] = useState<{
+    projectId: string;
+    messages: ProjectData["messages"];
+  } | null>(null);
+  const saveTimer = useRef<number | null>(null);
+
   const [leftView, setLeftView] = useState<LeftView>("editor");
   const [rightView, setRightView] = useState<RightView>("viewer");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const isReady = phase === "ready";
+
+  const refreshProjects = useCallback(async () => {
+    const list = await invoke<ProjectInfo[]>("list_projects");
+    setProjects(list);
+    return list;
+  }, []);
+
+  const flushSourceSave = useCallback(async () => {
+    if (saveTimer.current !== null) {
+      window.clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    if (activeProjectId) {
+      await invoke("save_project_source", { id: activeProjectId, source });
+    }
+  }, [activeProjectId, source]);
+
+  // Debounced save of the editor source. Uses a ref for the active project so
+  // the callback stays stable for the agent-event listeners.
+  const activeProjectIdRef = useRef(activeProjectId);
+  useEffect(() => {
+    activeProjectIdRef.current = activeProjectId;
+  }, [activeProjectId]);
+
+  const handleSourceChange = useCallback((value: string) => {
+    setSource(value);
+    if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => {
+      saveTimer.current = null;
+      const pid = activeProjectIdRef.current;
+      if (pid) {
+        void invoke("save_project_source", { id: pid, source: value });
+      }
+    }, 1000);
+  }, []);
+
+  const run = useCallback(async (sourceOverride?: string) => {
+    if (!isReady || running) return;
+    const sourceToRun = sourceOverride ?? source;
+    setRunning(true);
+    try {
+      const result = await invoke<ScriptResult>("run_cad_script", { source: sourceToRun });
+      setLastRun(result);
+    } catch (err) {
+      setLastRun({ stdout: "", error: String(err), objects: [] });
+    } finally {
+      setRunning(false);
+    }
+  }, [isReady, running, source]);
+
+  const loadProject = useCallback(
+    async (id: string) => {
+      await flushSourceSave();
+      const data = await invoke<ProjectData>("load_project", { id });
+      setSource(data.source);
+      setActiveProjectId(data.id);
+      setLoadedChat({ projectId: data.id, messages: data.messages });
+      await refreshProjects();
+      // Run the loaded project's script so the viewer reflects it.
+      void run(data.source);
+    },
+    [flushSourceSave, refreshProjects, run],
+  );
+
+  const createProject = useCallback(async () => {
+    const name = generateProjectName();
+    const created = await invoke<ProjectInfo>("create_project", { name });
+    await loadProject(created.id);
+    await refreshProjects();
+  }, [loadProject, refreshProjects]);
+
+  const renameProject = useCallback(
+    async (id: string, name: string) => {
+      await invoke("rename_project", { id, name });
+      await refreshProjects();
+    },
+    [refreshProjects],
+  );
+
+  const deleteProject = useCallback(async () => {
+    if (!editTarget) return;
+    await invoke("delete_project", { id: editTarget.id });
+    if (editTarget.id === activeProjectId) {
+      const list = await refreshProjects();
+      if (list.length > 0) {
+        await loadProject(list[0].id);
+      } else {
+        const name = generateProjectName();
+        const created = await invoke<ProjectInfo>("create_project", { name });
+        await loadProject(created.id);
+      }
+    } else {
+      await refreshProjects();
+    }
+    setEditTarget(null);
+  }, [activeProjectId, editTarget, loadProject, refreshProjects]);
 
   const runSetup = useCallback(async () => {
     setPhase("setup");
@@ -115,27 +225,67 @@ function App() {
     };
   }, [setupAttempt, runSetup]);
 
-  const run = useCallback(async () => {
-    if (!isReady || running) return;
-    setRunning(true);
-    try {
-      const result = await invoke<ScriptResult>("run_cad_script", { source });
-      setLastRun(result);
-    } catch (err) {
-      setLastRun({ stdout: "", error: String(err), objects: [] });
-    } finally {
-      setRunning(false);
-    }
-  }, [isReady, running, source]);
-
-  // Run the sample script once when the workbench first becomes ready.
-  const autoRan = useRef(false);
+  // Ensure a default project exists once the workbench is ready, then load it.
+  // Runs exactly once: re-running on callback-identity changes (which shift as
+  // the active project/source change) caused an endless load loop, because
+  // each load's flush reorders the project list by updatedAt.
+  const loadProjectRef = useRef(loadProject);
+  const refreshProjectsRef = useRef(refreshProjects);
   useEffect(() => {
-    if (isReady && !autoRan.current) {
-      autoRan.current = true;
-      void run();
-    }
-  }, [isReady, run]);
+    loadProjectRef.current = loadProject;
+    refreshProjectsRef.current = refreshProjects;
+  });
+  const bootstrapped = useRef(false);
+  useEffect(() => {
+    if (!isReady || bootstrapped.current) return;
+    bootstrapped.current = true;
+    let cancelled = false;
+    (async () => {
+      let list = await refreshProjectsRef.current();
+      if (list.length === 0) {
+        const name = generateProjectName();
+        const created = await invoke<ProjectInfo>("create_project", { name });
+        list = [created];
+      }
+      if (!cancelled && list.length > 0) {
+        await loadProjectRef.current(list[0].id);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isReady]);
+
+  // Sync the editor and viewer from agent activity.
+  useEffect(() => {
+    let disposed = false;
+    const unlisteners: (() => void)[] = [];
+
+    const register = async () => {
+      const codeUpdated = await listen<{ source: string }>("agent-code-updated", (e) => {
+        handleSourceChange(e.payload.source);
+      });
+      const done = await listen<{ message: string; source: string; scriptResult: ScriptResult | null }>(
+        "agent-done",
+        (e) => {
+          if (e.payload.source) handleSourceChange(e.payload.source);
+          if (e.payload.scriptResult) setLastRun(e.payload.scriptResult);
+        },
+      );
+      if (disposed) {
+        codeUpdated();
+        done();
+        return;
+      }
+      unlisteners.push(codeUpdated, done);
+    };
+
+    void register();
+    return () => {
+      disposed = true;
+      unlisteners.forEach((u) => u());
+    };
+  }, []);
 
   const exitApp = useCallback(() => {
     void invoke("exit_app");
@@ -171,10 +321,16 @@ function App() {
       {isReady && (
         <>
           <TopBar
+            projects={projects}
+            activeProjectId={activeProjectId}
+            onSelectProject={(id) => void loadProject(id)}
+            onCreateProject={() => void createProject()}
+            onEditProject={setEditTarget}
             onOpenSettings={() => setSettingsOpen(true)}
             onRun={run}
             canRun={!running}
             running={running}
+            runStatus={lastRun}
           />
           <Group
             className="app-split"
@@ -190,14 +346,17 @@ function App() {
                 switchTooltip={leftIsEditor ? "Switch to AI Chat" : "Switch to Code Editor"}
                 onSwitch={() => setLeftView(leftIsEditor ? "chat" : "editor")}
               >
-                {leftIsEditor ? (
-                  <div className="editor-stack">
-                    <CodeEditor value={source} onChange={setSource} />
-                    {lastRun && <RunOutput result={lastRun} onDismiss={() => setLastRun(null)} />}
-                  </div>
-                ) : (
-                  <ChatPanel />
-                )}
+                {/*
+                  Both views stay mounted so their state (chat messages,
+                  editor cursor, scroll) survives pane switches; visibility
+                  is toggled with CSS instead of unmounting.
+                */}
+                <div className={leftIsEditor ? "pane-view" : "pane-view pane-view-hidden"}>
+                  <CodeEditor value={source} onChange={handleSourceChange} />
+                </div>
+                <div className={leftIsEditor ? "pane-view pane-view-hidden" : "pane-view"}>
+                  <ChatPanel source={source} loadedChat={loadedChat} />
+                </div>
               </Pane>
             </Panel>
             <Separator className="split-handle" />
@@ -209,11 +368,22 @@ function App() {
                 switchTooltip={rightIsViewer ? "Switch to Print Preview" : "Switch to 3D View"}
                 onSwitch={() => setRightView(rightIsViewer ? "print" : "viewer")}
               >
-                {rightIsViewer ? <ViewerPanel objects={lastRun?.objects ?? null} /> : <PrintPreview />}
+                <div className={rightIsViewer ? "pane-view" : "pane-view pane-view-hidden"}>
+                  <ViewerPanel objects={lastRun?.objects ?? null} />
+                </div>
+                <div className={rightIsViewer ? "pane-view pane-view-hidden" : "pane-view"}>
+                  <PrintPreview />
+                </div>
               </Pane>
             </Panel>
           </Group>
           <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+          <ProjectEditModal
+            project={editTarget}
+            onClose={() => setEditTarget(null)}
+            onRename={(id, name) => void renameProject(id, name)}
+            onDelete={() => void deleteProject()}
+          />
         </>
       )}
     </div>

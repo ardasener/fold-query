@@ -1,15 +1,11 @@
-use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
-use std::time::{Duration, Instant};
+use std::process::Command;
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 
 /// Minimum supported Python version (CadQuery 2.8 requires >= 3.11).
 pub const MIN_PYTHON_MINOR: u32 = 11;
-/// Scripts that run longer than this are killed.
-pub const RUN_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub const REQUIREMENTS: &str = "cadquery>=2.8,<3\n";
 
@@ -101,7 +97,7 @@ fn module_available(python: &Path, module: &str) -> bool {
         .unwrap_or(false)
 }
 
-fn cache_dir(app: &AppHandle) -> Result<PathBuf, String> {
+pub(crate) fn cache_dir(app: &AppHandle) -> Result<PathBuf, String> {
     app.path()
         .app_cache_dir()
         .map_err(|e| format!("Could not resolve the app cache directory: {e}"))
@@ -257,64 +253,4 @@ pub fn ensure_environment(app: &AppHandle) -> Result<PathBuf, String> {
 
     emit(app, "verify", "CadQuery is ready");
     Ok(venv_py)
-}
-
-/// Runs the editor source through the venv Python runner (single shot).
-pub fn run_cad_script(app: &AppHandle, source: String) -> Result<ScriptResult, String> {
-    let cache = cache_dir(app)?;
-    let python = ensure_environment(app)?;
-    let runner = cache.join("runner.py");
-
-    let mut child = Command::new(&python)
-        .arg(&runner)
-        .current_dir(&cache)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| format!("Failed to spawn the Python runner: {e}"))?;
-
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin
-            .write_all(source.as_bytes())
-            .map_err(|e| format!("Failed to write source to the runner: {e}"))?;
-        // stdin drops here, closing the pipe so the runner sees EOF.
-    }
-
-    let start = Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(_)) => break,
-            Ok(None) => {
-                if start.elapsed() > RUN_TIMEOUT {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    return Err(format!(
-                        "Script timed out after {} seconds.",
-                        RUN_TIMEOUT.as_secs()
-                    ));
-                }
-                std::thread::sleep(Duration::from_millis(50));
-            }
-            Err(e) => return Err(format!("Failed waiting on the runner: {e}")),
-        }
-    }
-
-    let output = child
-        .wait_with_output()
-        .map_err(|e| format!("Failed to read runner output: {e}"))?;
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-
-    if !output.status.success() {
-        let detail = if stderr.trim().is_empty() {
-            "The Python runner exited unexpectedly."
-        } else {
-            stderr.trim()
-        };
-        return Err(detail.to_string());
-    }
-
-    serde_json::from_str(stdout.trim())
-        .map_err(|e| format!("Failed to parse runner output: {e}\nOutput was: {stdout}"))
 }

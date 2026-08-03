@@ -1,0 +1,13 @@
+.provider-tag {
+  margin-bottom: 12px;
+}
+
+.provider-test-result {
+  margin-bottom: 12px;
+}
+
+.provider-note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--fq-text-muted);
+}

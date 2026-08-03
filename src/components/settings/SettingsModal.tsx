@@ -1,18 +1,25 @@
+import { useEffect, useState } from "react";
 import { CheckOutlined } from "@ant-design/icons";
-import { InputNumber, Modal, Select, Tooltip } from "antd";
+import { Button, InputNumber, Modal, Select, Tag, Tooltip } from "antd";
+import { invoke } from "@tauri-apps/api/core";
 import { PALETTES } from "../../themes/palettes";
 import {
   EDITOR_FONT_OPTIONS,
   EDITOR_SIZE_MAX,
   EDITOR_SIZE_MIN,
+  HISTORY_BUDGET_DEFAULT,
+  HISTORY_BUDGET_MAX,
+  HISTORY_BUDGET_MIN,
   UI_FONT_OPTIONS,
   UI_SCALE_MAX,
   UI_SCALE_MIN,
   UI_SCALE_STEP,
+  clampHistoryBudget,
   snapUiScale,
   useSettings,
 } from "../../settings/SettingsContext";
 import { EDITOR_FONT_STACKS } from "../../themes/codemirror";
+import ProviderModal from "./ProviderModal";
 import "./SettingsModal.css";
 
 interface SettingsModalProps {
@@ -22,6 +29,19 @@ interface SettingsModalProps {
 
 function SettingsModal({ open, onClose }: SettingsModalProps) {
   const { settings, update } = useSettings();
+  const [providerOpen, setProviderOpen] = useState(false);
+  const [providerConfigured, setProviderConfigured] = useState(false);
+
+  const providerReady =
+    settings.provider.url.trim().length > 0 && settings.provider.model.trim().length > 0;
+
+  useEffect(() => {
+    if (open) {
+      invoke<boolean>("get_provider_status")
+        .then(setProviderConfigured)
+        .catch(() => setProviderConfigured(false));
+    }
+  }, [open, providerOpen]);
 
   return (
     <Modal
@@ -101,6 +121,38 @@ function SettingsModal({ open, onClose }: SettingsModalProps) {
         </section>
 
         <section className="settings-section">
+          <h3 className="settings-section-title">AI Provider</h3>
+
+          <div className="settings-field">
+            <span className="settings-label">Provider</span>
+            <Button onClick={() => setProviderOpen(true)}>Configure AI provider…</Button>
+            {providerReady && providerConfigured && (
+              <Tag color="success">Configured</Tag>
+            )}
+            {!providerConfigured && <Tag>Not configured</Tag>}
+          </div>
+          {providerReady && (
+            <p className="settings-hint provider-summary">
+              {settings.provider.model} @ {settings.provider.url}
+            </p>
+          )}
+
+          <div className="settings-field">
+            <span className="settings-label">Context</span>
+            <Tooltip title="Character budget for the conversation history sent to the model (clamped 4 000–200 000)">
+              <InputNumber
+                value={settings.historyCharBudget}
+                min={HISTORY_BUDGET_MIN}
+                max={HISTORY_BUDGET_MAX}
+                step={5_000}
+                onChange={(v) => update({ historyCharBudget: clampHistoryBudget(v ?? HISTORY_BUDGET_DEFAULT) })}
+              />
+            </Tooltip>
+            <span className="settings-hint">context budget (chars)</span>
+          </div>
+        </section>
+
+        <section className="settings-section">
           <h3 className="settings-section-title">Editor</h3>
 
           <div className="settings-field">
@@ -127,7 +179,9 @@ function SettingsModal({ open, onClose }: SettingsModalProps) {
               />
             </Tooltip>
           </div>
-      </section>
+        </section>
+
+        <ProviderModal open={providerOpen} onClose={() => setProviderOpen(false)} />
     </Modal>
   );
 }

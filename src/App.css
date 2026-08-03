@@ -24,14 +24,11 @@
   background: var(--fq-primary);
 }
 
-.editor-stack {
-  display: flex;
-  flex-direction: column;
+/* Pane views stay mounted; the inactive one is hidden. */
+.pane-view {
   height: 100%;
-  min-height: 0;
 }
 
-.editor-stack > .code-editor {
-  flex: 1;
-  min-height: 0;
+.pane-view-hidden {
+  display: none;
 }
