@@ -24,7 +24,7 @@ function PythonSetupModal({ checking, steps, error, onRetry, onExit }: PythonSet
       open
       title="Python environment"
       closable={false}
-      maskClosable={false}
+      mask={{ closable: false }}
       keyboard={false}
       footer={
         error

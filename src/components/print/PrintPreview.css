@@ -1,9 +1,18 @@
 .print-preview {
+  position: relative;
   height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   background: var(--fq-surface-alt);
+}
+
+.print-preview-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
   padding: 24px;
   overflow: auto;
 }
@@ -36,4 +45,119 @@
   color: var(--fq-text-muted);
   font-size: 13px;
   text-align: center;
+}
+
+/* Vertically stacked page previews (on-screen, scaled for display only). */
+.print-pages-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.print-page-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: min(100%, 420px);
+}
+
+.print-page-boundary {
+  width: 100%;
+  background: #fff;
+  border: 1px dashed var(--fq-text-muted);
+  border-radius: 2px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.print-page-svg {
+  width: 100%;
+  display: block;
+}
+
+.print-page-number {
+  color: var(--fq-text-muted);
+  font-size: 12px;
+}
+
+.print-overflow-alert {
+  width: min(100%, 420px);
+}
+
+/* Settings bar below the preview. */
+.print-settings-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--fq-border);
+  background: var(--fq-surface);
+}
+
+.print-paper-select {
+  min-width: 140px;
+}
+
+.print-target-label {
+  color: var(--fq-text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+  margin-right: 6px;
+}
+
+.print-target-input {
+  width: 90px;
+}
+
+.print-notice-alert {
+  width: min(100%, 420px);
+}
+
+.print-settings-spacer {
+  flex: 1;
+}
+
+.net-edge {
+  fill: none;
+  stroke: var(--fq-text, #000);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Cut: solid. Valley: dashed. Mountain: dash-dot. Coplanar: not drawn. */
+.net-edge-cut {
+  stroke: var(--fq-text, #000);
+}
+
+.net-edge-valley {
+  stroke: #888;
+  stroke-dasharray: 5 3;
+}
+
+.net-edge-mountain {
+  stroke: #888;
+  stroke-dasharray: 1.5 3;
+}
+
+.net-edge-coplanar {
+  stroke: none;
+}
+
+.net-island-label {
+  fill: var(--fq-text-muted, #999);
+  font-size: 14px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.net-spinner-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--fq-surface-alt, #fff) 70%, transparent);
 }

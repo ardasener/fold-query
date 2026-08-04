@@ -5,6 +5,7 @@ mod project;
 mod provider;
 mod python;
 mod sidecar;
+mod unfold;
 
 use tauri::AppHandle;
 
@@ -111,6 +112,16 @@ async fn write_downloads_file(
         .map_err(|e| e.to_string())?
 }
 
+#[tauri::command]
+async fn unfold(
+    mesh: python::MeshObject,
+    target_faces: Option<u32>,
+) -> Result<unfold::Net, String> {
+    tauri::async_runtime::spawn_blocking(move || unfold::unfold(&mesh, target_faces))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -134,6 +145,7 @@ pub fn run() {
             rename_project,
             delete_project,
             write_downloads_file,
+            unfold,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

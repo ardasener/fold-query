@@ -9,6 +9,7 @@ import {
   type UiFontId,
 } from "../themes/antd";
 import type { EditorFontId } from "../themes/codemirror";
+import { PAPER_DEFAULT, isPaperId, type PaperSizeId } from "../lib/paper";
 
 export const UI_FONT_OPTIONS: { id: UiFontId; name: string }[] = [
   { id: "inter", name: "Inter" },
@@ -42,6 +43,14 @@ export function clampHistoryBudget(value: number): number {
   return Math.min(HISTORY_BUDGET_MAX, Math.max(HISTORY_BUDGET_MIN, Math.round(value)));
 }
 
+export const UNFOLD_TARGET_DEFAULT = 100;
+export const UNFOLD_TARGET_MIN = 30;
+export const UNFOLD_TARGET_MAX = 5000;
+
+export function clampUnfoldTarget(value: number): number {
+  return Math.min(UNFOLD_TARGET_MAX, Math.max(UNFOLD_TARGET_MIN, Math.round(value)));
+}
+
 export interface Settings {
   themeId: string;
   uiFont: UiFontId;
@@ -50,6 +59,8 @@ export interface Settings {
   editorSize: number;
   historyCharBudget: number;
   provider: ProviderSettings;
+  paperSize: PaperSizeId;
+  unfoldTargetFaces: number;
 }
 
 const DEFAULTS: Settings = {
@@ -60,6 +71,8 @@ const DEFAULTS: Settings = {
   editorSize: 13,
   historyCharBudget: HISTORY_BUDGET_DEFAULT,
   provider: { url: DEFAULT_PROVIDER_URL, model: "" },
+  paperSize: PAPER_DEFAULT,
+  unfoldTargetFaces: UNFOLD_TARGET_DEFAULT,
 };
 
 const STORAGE_KEY = "foldquery-settings";
@@ -115,6 +128,11 @@ function loadSettings(): Settings {
             ? parsed.provider.model
             : DEFAULTS.provider.model,
       },
+      paperSize: isPaperId(parsed.paperSize) ? parsed.paperSize : DEFAULTS.paperSize,
+      unfoldTargetFaces:
+        typeof parsed.unfoldTargetFaces === "number" && Number.isFinite(parsed.unfoldTargetFaces)
+          ? clampUnfoldTarget(parsed.unfoldTargetFaces)
+          : DEFAULTS.unfoldTargetFaces,
     };
   } catch {
     return DEFAULTS;

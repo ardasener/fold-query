@@ -7,6 +7,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Local reference/research workspace
+.local/
+
 # Bun / Node
 node_modules
 .bun

@@ -384,7 +384,10 @@ function App() {
                   <ViewerPanel objects={lastRun?.objects ?? null} />
                 </div>
                 <div className={rightIsViewer ? "pane-view pane-view-hidden" : "pane-view"}>
-                  <PrintPreview />
+                  <PrintPreview
+                    mesh={lastRun?.objects?.[0] ?? null}
+                    visible={!rightIsViewer}
+                  />
                 </div>
               </Pane>
             </Panel>

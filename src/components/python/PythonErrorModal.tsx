@@ -56,7 +56,7 @@ function PythonErrorModal({ missing, systemPython, onExit }: PythonErrorModalPro
       open
       title={copy.title}
       closable={false}
-      maskClosable={false}
+      mask={{ closable: false }}
       keyboard={false}
       footer={[
         <Button key="exit" danger type="primary" onClick={onExit}>
