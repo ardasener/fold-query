@@ -113,6 +113,65 @@ async fn write_downloads_file(
 }
 
 #[tauri::command]
+fn read_file(path: String) -> Result<Vec<u8>, String> {
+    project::read_file(path)
+}
+
+#[tauri::command]
+async fn import_mesh(
+    app: AppHandle,
+    name: String,
+    source_name: String,
+    source_bytes: Vec<u8>,
+    mesh: python::MeshObject,
+    scale: f64,
+) -> Result<project::ProjectInfo, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        project::import_mesh(&app, name, &source_name, &source_bytes, &mesh, scale)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn import_cad_file(
+    app: AppHandle,
+    name: String,
+    source_name: String,
+    source_bytes: Vec<u8>,
+) -> Result<project::ProjectInfo, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        project::import_cad_file(&app, name, &source_name, &source_bytes)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn save_scale(app: AppHandle, id: String, scale: f64) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || project::save_scale(&app, &id, scale))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn export_cad(
+    app: AppHandle,
+    source: String,
+    format: String,
+    file_name: String,
+) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let dir = download::downloads_dir(&app)?;
+        let target = dir.join(&file_name);
+        let path = sidecar::export_cad_script(&app, &source, &format, &target.to_str().unwrap_or(""))?;
+        Ok(path)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
 async fn unfold(
     mesh: python::MeshObject,
     target_faces: Option<u32>,
@@ -126,6 +185,7 @@ async fn unfold(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(sidecar::SidecarManager::default())
         .manage(agent::AgentState::default())
         .invoke_handler(tauri::generate_handler![
@@ -145,6 +205,11 @@ pub fn run() {
             rename_project,
             delete_project,
             write_downloads_file,
+            read_file,
+            import_mesh,
+            import_cad_file,
+            save_scale,
+            export_cad,
             unfold,
         ])
         .run(tauri::generate_context!())

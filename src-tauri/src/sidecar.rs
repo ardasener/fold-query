@@ -200,3 +200,35 @@ pub async fn get_docs_async(app: &AppHandle, symbol: &str) -> Result<DocsResult,
         .await
         .map_err(|e| e.to_string())?
 }
+
+/// Run a project's script and export the last shown solid to STEP or BREP,
+/// writing the file to the given absolute path. Returns the written path.
+pub fn export_cad_script(
+    app: &AppHandle,
+    source: &str,
+    format: &str,
+    target_path: &str,
+) -> Result<String, String> {
+    let manager = app.state::<SidecarManager>();
+    #[derive(serde::Deserialize)]
+    struct ExportResult {
+        #[serde(default)]
+        error: Option<String>,
+        path: Option<String>,
+    }
+    let result: ExportResult = manager.call(
+        app,
+        "export_cad",
+        &serde_json::json!({
+            "source": source,
+            "format": format,
+            "targetPath": target_path,
+        }),
+    )?;
+    if let Some(err) = result.error {
+        return Err(err);
+    }
+    result
+        .path
+        .ok_or_else(|| "export_cad returned no path".to_string())
+}

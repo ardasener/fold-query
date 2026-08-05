@@ -6,6 +6,7 @@ import {
   FolderOutlined,
   PlusOutlined,
   SearchOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import type { ProjectInfo } from "../../types/project";
 import "./ProjectSelector.css";
@@ -15,10 +16,11 @@ interface ProjectSelectorProps {
   activeId: string | null;
   onSelect: (id: string) => void;
   onCreate: () => void;
+  onImport: () => void;
   onEdit: (project: ProjectInfo) => void;
 }
 
-function ProjectSelector({ projects, activeId, onSelect, onCreate, onEdit }: ProjectSelectorProps) {
+function ProjectSelector({ projects, activeId, onSelect, onCreate, onImport, onEdit }: ProjectSelectorProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const active = projects.find((p) => p.id === activeId);
@@ -38,6 +40,12 @@ function ProjectSelector({ projects, activeId, onSelect, onCreate, onEdit }: Pro
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           allowClear
+        />
+        <Button
+          icon={<UploadOutlined />}
+          onClick={onImport}
+          aria-label="Import model"
+          title="Import model"
         />
         <Button
           icon={<PlusOutlined />}

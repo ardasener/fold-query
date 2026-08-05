@@ -1,5 +1,9 @@
 # model-export Specification
 
+## Purpose
+
+Export the current model from the 3D view to the Downloads folder in mesh formats (GLB, OBJ, STL, PLY) and CAD solid formats (STEP, BREP, gated on code projects).
+
 ## Requirements
 
 ### Requirement: Export button with format picker
@@ -27,3 +31,17 @@ Selecting a format MUST export the displayed mesh in that format and write it to
 #### Scenario: Failure feedback
 - **WHEN** the export fails (e.g., write error)
 - **THEN** an error toast shows the reason
+
+### Requirement: STEP and BREP export
+The export menu SHALL offer STEP and BREP options in addition to GLB, OBJ, STL, and PLY.
+
+#### Scenario: STEP/BREP exported from solid
+- **WHEN** the user selects STEP or BREP on a code project (including imported CAD solids)
+- **THEN** the Python sidecar exports the model's solid via CadQuery's exporters to the Downloads folder
+
+### Requirement: STEP/BREP unavailable for mesh projects
+Mesh projects SHALL gray out the STEP and BREP export options, since a mesh has no underlying solid.
+
+#### Scenario: Mesh project grays STEP/BREP
+- **WHEN** a mesh project is active and the export menu opens
+- **THEN** STEP and BREP items are disabled with an explanation

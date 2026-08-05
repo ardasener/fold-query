@@ -1,5 +1,9 @@
 # project-management Specification
 
+## Purpose
+
+Manage projects: create, switch, rename, delete, and load them, including the project mode (code or mesh) that determines how the model is edited and stored.
+
 ## Requirements
 
 ### Requirement: Project selector popover
@@ -44,3 +48,14 @@ When the app starts and no projects exist, the app MUST create and activate a de
 #### Scenario: Empty project list on start
 - **WHEN** the app becomes ready and no projects exist
 - **THEN** a default project is created and activated
+
+### Requirement: Project mode
+A project SHALL carry a `mode` in its metadata: `"code"` (default, has a `model.py`) or `"mesh"` (no script; mesh stored as `mesh.json`).
+
+#### Scenario: Existing projects default to code mode
+- **WHEN** a project without a `mode` field is loaded
+- **THEN** it is treated as a code project
+
+#### Scenario: Mesh project loads mesh data
+- **WHEN** a mesh project is loaded
+- **THEN** the app receives its normalized mesh and scale instead of a script

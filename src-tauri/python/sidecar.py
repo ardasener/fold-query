@@ -14,6 +14,7 @@ Methods:
     ping               -> {"pong": true}
     run_script {source} -> {"stdout": str, "error": str|null, "objects": [{"vertices": [...], "faces": [...]}]}
     get_docs {symbol}   -> {"symbol": str, "docstring": str}
+    export_cad {source, format} -> {"path": str}   (format: "step" | "brep")
 """
 
 import contextlib
@@ -86,6 +87,35 @@ def get_docs(symbol):
     return {"symbol": symbol, "docstring": doc[:4000]}
 
 
+def export_cad(source, fmt, target_path):
+    """Run a CadQuery script and export the last shown solid to STEP or BREP."""
+    shown = []
+
+    def show_object(obj, name=None, options=None):
+        shown.append(obj)
+
+    captured = io.StringIO()
+    with contextlib.redirect_stdout(captured):
+        exec(
+            compile(source, "<cadquery>", "exec"),
+            {"show_object": show_object, "cq": cadquery},
+        )
+    if not shown:
+        return {"error": "No objects were shown by the script."}
+    solid = shown[-1]
+    solid = solid.val() if hasattr(solid, "val") else solid
+    try:
+        if fmt == "step":
+            cadquery.exporters.exportStep(solid, target_path)
+        elif fmt == "brep":
+            cadquery.exporters.exportBrep(solid, target_path)
+        else:
+            return {"error": "Unsupported CAD export format: %r" % fmt}
+    except Exception as exc:
+        return {"error": "CAD export failed: %r" % (exc,)}
+    return {"path": target_path}
+
+
 def main():
     out = sys.stdout
     for raw in sys.stdin.buffer:
@@ -104,6 +134,12 @@ def main():
                 result = {"pong": True}
             elif method == "run_script":
                 result = run_script(params.get("source", ""))
+            elif method == "export_cad":
+                result = export_cad(
+                    params.get("source", ""),
+                    params.get("format", "step"),
+                    params.get("targetPath", ""),
+                )
             elif method == "get_docs":
                 result = get_docs(params.get("symbol", ""))
             else:

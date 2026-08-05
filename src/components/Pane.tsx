@@ -5,9 +5,10 @@ import "./Pane.css";
 interface PaneProps {
   label: string;
   icon: ReactNode;
-  switchIcon: ReactNode;
-  switchTooltip: string;
-  onSwitch: () => void;
+  /** Hidden when no view switch is available (e.g. mesh projects). */
+  switchIcon?: ReactNode;
+  switchTooltip?: string;
+  onSwitch?: () => void;
   /** Optional actions rendered in the header before the switch icon. */
   extra?: ReactNode;
   children: ReactNode;
@@ -23,16 +24,18 @@ function Pane({ label, icon, switchIcon, switchTooltip, onSwitch, extra, childre
         </span>
         <span className="pane-actions">
           {extra}
-          <Tooltip title={switchTooltip}>
-            <Button
-              type="text"
-              size="small"
-              className="pane-switch"
-              icon={switchIcon}
-              onClick={onSwitch}
-              aria-label={switchTooltip}
-            />
-          </Tooltip>
+          {switchIcon && onSwitch && (
+            <Tooltip title={switchTooltip}>
+              <Button
+                type="text"
+                size="small"
+                className="pane-switch"
+                icon={switchIcon}
+                onClick={onSwitch}
+                aria-label={switchTooltip}
+              />
+            </Tooltip>
+          )}
         </span>
       </header>
       <div className="pane-content">{children}</div>

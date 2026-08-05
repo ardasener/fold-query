@@ -16,6 +16,7 @@ interface TopBarProps {
   activeProjectId: string | null;
   onSelectProject: (id: string) => void;
   onCreateProject: () => void;
+  onImportProject: () => void;
   onEditProject: (project: ProjectInfo) => void;
   onOpenSettings: () => void;
   onRun: () => void;
@@ -42,6 +43,7 @@ function TopBar({
   activeProjectId,
   onSelectProject,
   onCreateProject,
+  onImportProject,
   onEditProject,
   onOpenSettings,
   onRun,
@@ -66,6 +68,7 @@ function TopBar({
         activeId={activeProjectId}
         onSelect={onSelectProject}
         onCreate={onCreateProject}
+        onImport={onImportProject}
         onEdit={onEditProject}
       />
       <div className="top-bar-spacer" data-tauri-drag-region />

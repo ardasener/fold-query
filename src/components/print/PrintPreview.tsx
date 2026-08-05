@@ -177,10 +177,16 @@ function PrintPreview({ mesh, visible }: PrintPreviewProps) {
         )}
         {net?.simplified?.error && (
           <Alert
-            type="warning"
+            type="info"
             className="print-notice-alert"
-            message="Mesh simplification failed"
-            description="The mesh was unfolded without simplification."
+            message="Mesh simplification skipped"
+            description={
+              <span>
+                Reducing to {net.simplified?.finalFaces} faces would have opened holes in the
+                model, so the original mesh ({net.simplified?.originalFaces} faces) was used
+                instead.
+              </span>
+            }
             showIcon
             closable
           />

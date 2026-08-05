@@ -9,13 +9,15 @@ import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
 import { PLYExporter } from "three/examples/jsm/exporters/PLYExporter.js";
 import type { MeshObject } from "../../types/python";
 
-type ExportFormat = "glb" | "obj" | "stl" | "ply";
+type ExportFormat = "glb" | "obj" | "stl" | "ply" | "step" | "brep";
 
 const FORMAT_LABELS: Record<ExportFormat, string> = {
   glb: "GLB (.glb)",
   obj: "OBJ (.obj)",
   stl: "STL (.stl)",
   ply: "PLY (.ply)",
+  step: "STEP (.step)",
+  brep: "BREP (.brep)",
 };
 
 const EXTENSIONS: Record<ExportFormat, string> = {
@@ -23,7 +25,12 @@ const EXTENSIONS: Record<ExportFormat, string> = {
   obj: "obj",
   stl: "stl",
   ply: "ply",
+  step: "step",
+  brep: "brep",
 };
+
+/** Formats that need a CAD solid (only code projects can export them). */
+const CAD_FORMATS: ExportFormat[] = ["step", "brep"];
 
 function sanitizeFileName(name: string): string {
   const cleaned = name.replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
@@ -64,9 +71,13 @@ function buildGroup(objects: MeshObject[]): THREE.Group {
 interface ExportButtonProps {
   projectName: string;
   objects: MeshObject[] | null;
+  /** The active project's CadQuery source (used for STEP/BREP export). */
+  source: string;
+  /** Whether the active project can export CAD solids (code mode only). */
+  canExportCad: boolean;
 }
 
-function ExportButton({ projectName, objects }: ExportButtonProps) {
+function ExportButton({ projectName, objects, source, canExportCad }: ExportButtonProps) {
   const [exporting, setExporting] = useState(false);
   const hasModel = objects != null && objects.length > 0;
 
@@ -75,9 +86,15 @@ function ExportButton({ projectName, objects }: ExportButtonProps) {
       if (!objects || objects.length === 0) return;
       setExporting(true);
       try {
-        const group = buildGroup(objects);
         const fileName = `${sanitizeFileName(projectName)}-${timestamp()}.${EXTENSIONS[format]}`;
 
+        if (format === "step" || format === "brep") {
+          const path = await invoke<string>("export_cad", { source, format, fileName });
+          void message.success(`Exported to ${path}`);
+          return;
+        }
+
+        const group = buildGroup(objects);
         let raw: ArrayBuffer | DataView | string;
         if (format === "glb") {
           const glbResult = await new Promise<ArrayBuffer | Record<string, unknown>>(
@@ -108,7 +125,7 @@ function ExportButton({ projectName, objects }: ExportButtonProps) {
         setExporting(false);
       }
     },
-    [objects, projectName],
+    [objects, projectName, source],
   );
 
   return (
@@ -117,6 +134,7 @@ function ExportButton({ projectName, objects }: ExportButtonProps) {
         items: (Object.keys(FORMAT_LABELS) as ExportFormat[]).map((f) => ({
           key: f,
           label: FORMAT_LABELS[f],
+          disabled: CAD_FORMATS.includes(f) && !canExportCad,
         })),
         onClick: ({ key }) => void exportAs(key as ExportFormat),
       }}

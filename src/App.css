@@ -32,3 +32,46 @@
 .pane-view-hidden {
   display: none;
 }
+
+/* Mesh project (imported model) left panel. */
+.mesh-project-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 32px;
+}
+
+.mesh-info-box {
+  max-width: 320px;
+  padding: 14px 16px;
+  border: 1px dashed var(--fq-border);
+  border-radius: 6px;
+  background: var(--fq-surface-alt);
+  color: var(--fq-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.mesh-scale-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mesh-scale-label {
+  color: var(--fq-text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.mesh-scale-input {
+  width: 100px;
+}
+
+.mesh-scale-unit {
+  color: var(--fq-text-muted);
+  font-size: 13px;
+}
