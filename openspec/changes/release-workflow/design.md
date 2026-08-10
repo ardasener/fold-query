@@ -50,11 +50,13 @@ Fill `scripts/fetch-micromamba.ts` PLATFORMS with the verified SHA-256s:
 
 The script resolves the platform from `TAURI_ENV_TARGET_TRIPLE` (set by the Tauri CLI for every hook command) so each runner fetches its own binary — this matters for the Intel macOS job (`--target x86_64-apple-darwin` on an arm64 runner). The script's "no checksum → skip" branch becomes dead for release builds (all four pinned), keeping dev builds working without a download when a runner can't reach GitHub.
 
-### D5: Fetch hooks run pre-build
+### D5: Fetch hooks run pre-build, invoked via a package.json script
 
-`tauri.conf.json` runs `bun ../scripts/fetch-micromamba.ts` in `beforeDevCommand` and `beforeBuildCommand` (chained after the frontend build). `beforeBundleCommand` is *not* used: the build script (tauri-build) validates `externalBin` paths during `cargo build`, so the sidecar must exist before the build starts — a post-build hook fails every platform, not just Windows.
+`tauri.conf.json` runs `bun run fetch-micromamba` in `beforeDevCommand` and `beforeBuildCommand` (chained after the frontend build). `beforeBundleCommand` is *not* used: the build script (tauri-build) validates `externalBin` paths during `cargo build`, so the sidecar must exist before the build starts — a post-build hook fails every platform, not just Windows.
 
-**Why:** `cargo check` reproduces the CI failure locally: `resource path 'binaries/micromamba-<triple>' doesn't exist`. Verified the script under `TAURI_ENV_TARGET_TRIPLE` for all four targets, including the Windows `.exe` naming.
+The hook invokes `bun run fetch-micromamba` (a package.json script wrapping `bun scripts/fetch-micromamba.ts`) rather than a raw relative path: Tauri runs hook commands from the CLI invocation directory (the repo root in CI), so `bun ../scripts/...` resolved outside the repo and failed with `Module not found` on all four runners. `bun run` resolves the wrapped script from the package root regardless of CWD.
+
+**Why:** `cargo check` reproduces the first CI failure locally: `resource path 'binaries/micromamba-<triple>' doesn't exist` (build-script ordering). The second CI failure (`Module not found "../scripts/fetch-micromamba.ts"`, all four runners) was the hook CWD issue fixed by wrapping in a package.json script. Verified `bun run fetch-micromamba` from both repo root and `src-tauri/` CWD, and the script under `TAURI_ENV_TARGET_TRIPLE` for all four targets, including the Windows `.exe` naming.
 
 ## Risks / Trade-offs
 

@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "bun test",
     "tauri": "tauri",
+    "fetch-micromamba": "bun scripts/fetch-micromamba.ts",
     "release": "bash scripts/release.sh"
   },
   "dependencies": {

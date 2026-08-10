@@ -17,6 +17,7 @@
 - [x] 3.1 Fill `scripts/fetch-micromamba.ts` PLATFORMS with the verified sha256 for `x86_64-apple-darwin`, `x86_64-pc-windows-msvc`, `x86_64-unknown-linux-gnu` (aarch64 already pinned)
 - [x] 3.2 Verify the fetch script downloads + checksum-verifies each of the four binaries locally (one at a time, into temp dirs)
 - [x] 3.3 Move the fetch into `beforeDevCommand`/`beforeBuildCommand` (from `beforeBundleCommand`) and resolve the platform via `TAURI_ENV_TARGET_TRIPLE` — tauri-build validates `externalBin` during `cargo build`, so a post-build hook fails all platforms (first CI run failed with `resource path 'binaries/micromamba-<triple>' doesn't exist`); verified locally with `cargo check` and per-target env simulation
+- [x] 3.4 Invoke the fetch via a package.json script (`bun run fetch-micromamba`) instead of a raw `bun ../scripts/...` path — Tauri runs hooks from the CLI invocation directory (repo root in CI), so the relative path escaped the repo and failed with `Module not found` on all four runners (second CI run); verified `bun run fetch-micromamba` from both repo root and `src-tauri/` CWD in a temp copy
 
 ## 4. Git remotes
 

@@ -85,9 +85,13 @@ EOF
 # Cargo.toml: version = "x.y.z" under [package]
 sed -i.bak -E "s/^version = \".*\"/version = \"$NEW\"/" src-tauri/Cargo.toml
 rm -f src-tauri/Cargo.toml.bak
+# Regenerate Cargo.lock so the committed lock matches the bumped manifest
+# (metadata resolution writes the root package version; it does not upgrade
+# locked dependency versions).
+cargo metadata --format-version 1 --manifest-path src-tauri/Cargo.toml > /dev/null
 
 # ── Commit, tag, push ──────────────────────────────────────────────────────
-git add src-tauri/tauri.conf.json package.json src-tauri/Cargo.toml
+git add src-tauri/tauri.conf.json package.json src-tauri/Cargo.toml src-tauri/Cargo.lock
 git commit -m "release: v$NEW"
 git tag "v$NEW"
 git push origin HEAD --tags
