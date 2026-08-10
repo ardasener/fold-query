@@ -16,6 +16,7 @@
 
 - [x] 3.1 Fill `scripts/fetch-micromamba.ts` PLATFORMS with the verified sha256 for `x86_64-apple-darwin`, `x86_64-pc-windows-msvc`, `x86_64-unknown-linux-gnu` (aarch64 already pinned)
 - [x] 3.2 Verify the fetch script downloads + checksum-verifies each of the four binaries locally (one at a time, into temp dirs)
+- [x] 3.3 Move the fetch into `beforeDevCommand`/`beforeBuildCommand` (from `beforeBundleCommand`) and resolve the platform via `TAURI_ENV_TARGET_TRIPLE` — tauri-build validates `externalBin` during `cargo build`, so a post-build hook fails all platforms (first CI run failed with `resource path 'binaries/micromamba-<triple>' doesn't exist`); verified locally with `cargo check` and per-target env simulation
 
 ## 4. Git remotes
 

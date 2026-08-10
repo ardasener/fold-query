@@ -2,12 +2,17 @@
  * Fetches a pinned micromamba binary for the build target platform and places
  * it where Tauri's `externalBin` expects sidecars (src-tauri/binaries/).
  *
- * Run as Tauri's beforeBundleCommand. The version and per-platform checksums
- * are pinned in this file; the build fails if the download doesn't match.
+ * Run from Tauri's beforeDevCommand/beforeBuildCommand hooks: the sidecar
+ * must exist when tauri-build resolves externalBin during cargo build, so it
+ * is fetched before the build starts (beforeBundleCommand would be too late).
+ * The version and per-platform checksums are pinned in this file; the build
+ * fails if the download doesn't match.
  *
  * Usage: bun scripts/fetch-micromamba.ts [platform]
  *   platform: one of "aarch64-apple-darwin" (default), "x86_64-apple-darwin",
- *             "x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu"
+ *             "x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu".
+ *   When omitted, the target triple the CLI is building (TAURI_ENV_TARGET_TRIPLE,
+ *   set for all Tauri hook commands) is used.
  */
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync, chmodSync } from "node:fs";
@@ -46,7 +51,10 @@ function fail(msg: string): never {
 }
 
 async function main() {
-  const platform = process.argv[2] ?? "aarch64-apple-darwin";
+  const platform =
+    process.argv[2] ??
+    process.env.TAURI_ENV_TARGET_TRIPLE ??
+    "aarch64-apple-darwin";
   const spec = PLATFORMS[platform];
   if (!spec) fail(`Unknown platform "${platform}".`);
   if (!spec.sha256) {

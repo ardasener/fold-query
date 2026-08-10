@@ -7,7 +7,7 @@ The app has no release pipeline: no CI, no automated builds, and no way to ship 
 - Add `.github/workflows/release.yml`: a 4-platform matrix (macOS arm64, macOS Intel, Ubuntu 22.04, Windows) that sets up Node/Bun/Rust, installs OS deps, runs `bun install`, and invokes `tauri-apps/tauri-action@v0` to build and upload bundles, creating a **draft GitHub release** on `v*` tag pushes.
 - Add `scripts/release.sh` and the `"release": "bash scripts/release.sh"` npm script: preflight (clean tree + in sync with origin), bump the version (minor default, `--patch`/`--major`), write it to `tauri.conf.json`, `package.json`, and `Cargo.toml`, then commit, tag `v$NEW`, and push to `origin`.
 - Add the GitHub remote as `origin` (`git@github.com:ardasener/fold-query.git`); GitLab stays as the `gitlab` remote (source of truth). `release.sh` pushes to GitHub, which triggers the workflow.
-- Fill in the missing micromamba SHA-256 checksums in `scripts/fetch-micromamba.ts` for Intel macOS, Windows, and Linux so the `beforeBundleCommand` bundles micromamba on every release runner (previously only arm64 macOS had a pinned checksum).
+- Fill in the missing micromamba SHA-256 checksums in `scripts/fetch-micromamba.ts` for Intel macOS, Windows, and Linux so micromamba bundles on every release runner (previously only arm64 macOS had a pinned checksum). The fetch runs from Tauri's `beforeDevCommand`/`beforeBuildCommand` hooks — not `beforeBundleCommand`, which runs after `cargo build` while tauri-build resolves `externalBin` during the build (the original hook ordering failed all four platforms in CI).
 
 ## Capabilities
 

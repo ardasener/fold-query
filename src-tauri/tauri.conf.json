@@ -4,10 +4,9 @@
   "version": "0.2.0",
   "identifier": "com.foldquery.app",
   "build": {
-    "beforeDevCommand": "bun run dev",
+    "beforeDevCommand": "bun ../scripts/fetch-micromamba.ts && bun run dev",
     "devUrl": "http://localhost:3420",
-    "beforeBuildCommand": "bun run build",
-    "beforeBundleCommand": "bun ../scripts/fetch-micromamba.ts",
+    "beforeBuildCommand": "bun run build && bun ../scripts/fetch-micromamba.ts",
     "frontendDist": "../dist"
   },
   "app": {

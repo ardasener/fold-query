@@ -6,7 +6,7 @@ FoldQuery currently has no release infrastructure. The reference project `projec
 
 The reference pushes to a GitHub `origin` while keeping GitLab as the source (`gitlab` remote). FoldQuery currently has only a GitLab remote; the GitHub repo `ardasener/fold-query` already exists.
 
-One FoldQuery-specific interaction: our `beforeBundleCommand` (`fetch-micromamba.ts`) downloads and checksum-verifies the bundled micromamba per platform. Only the arm64 macOS checksum is currently pinned; the other three platforms would skip bundling (empty sha256) or fail. For a working cross-platform release, all four must be pinned.
+One FoldQuery-specific interaction: our `fetch-micromamba.ts` downloads and checksum-verifies the bundled micromamba per platform. Only the arm64 macOS checksum is currently pinned; the other three platforms would skip bundling (empty sha256) or fail. For a working cross-platform release, all four must be pinned. The script runs from Tauri's `beforeDevCommand`/`beforeBuildCommand` hooks (not `beforeBundleCommand`, which runs after `cargo build` — tauri-build resolves `externalBin` during the build and fails if the sidecar is absent).
 
 ## Goals / Non-Goals
 
@@ -48,7 +48,13 @@ Fill `scripts/fetch-micromamba.ts` PLATFORMS with the verified SHA-256s:
 - `x86_64-unknown-linux-gnu`: `77b7790e…`
 - (`aarch64-apple-darwin` already pinned)
 
-The script's "no checksum → skip" branch becomes dead for release builds (all four pinned), keeping dev builds working without a download when a runner can't reach GitHub.
+The script resolves the platform from `TAURI_ENV_TARGET_TRIPLE` (set by the Tauri CLI for every hook command) so each runner fetches its own binary — this matters for the Intel macOS job (`--target x86_64-apple-darwin` on an arm64 runner). The script's "no checksum → skip" branch becomes dead for release builds (all four pinned), keeping dev builds working without a download when a runner can't reach GitHub.
+
+### D5: Fetch hooks run pre-build
+
+`tauri.conf.json` runs `bun ../scripts/fetch-micromamba.ts` in `beforeDevCommand` and `beforeBuildCommand` (chained after the frontend build). `beforeBundleCommand` is *not* used: the build script (tauri-build) validates `externalBin` paths during `cargo build`, so the sidecar must exist before the build starts — a post-build hook fails every platform, not just Windows.
+
+**Why:** `cargo check` reproduces the CI failure locally: `resource path 'binaries/micromamba-<triple>' doesn't exist`. Verified the script under `TAURI_ENV_TARGET_TRIPLE` for all four targets, including the Windows `.exe` naming.
 
 ## Risks / Trade-offs
 
