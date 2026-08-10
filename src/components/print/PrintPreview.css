@@ -119,25 +119,28 @@
   flex: 1;
 }
 
+/* The preview sheet simulates white paper, so the "ink" must always be dark
+   regardless of the app theme (theme text colors can be near-white in dark
+   themes and would vanish on the white sheet). */
 .net-edge {
   fill: none;
-  stroke: var(--fq-text, #000);
+  stroke: #000;
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
 /* Cut: solid. Valley: dashed. Mountain: dash-dot. Coplanar: not drawn. */
 .net-edge-cut {
-  stroke: var(--fq-text, #000);
+  stroke: #000;
 }
 
 .net-edge-valley {
-  stroke: #888;
+  stroke: #555;
   stroke-dasharray: 5 3;
 }
 
 .net-edge-mountain {
-  stroke: #888;
+  stroke: #555;
   stroke-dasharray: 1.5 3;
 }
 
@@ -146,7 +149,7 @@
 }
 
 .net-island-label {
-  fill: var(--fq-text-muted, #999);
+  fill: #555;
   font-size: 14px;
   text-anchor: middle;
   dominant-baseline: middle;

@@ -13,20 +13,20 @@ interface PythonErrorModalProps {
 
 const COPY: Record<MissingComponent, { title: string; body: string }> = {
   python: {
-    title: "Python is required",
-    body: "FoldQuery needs Python 3.11 or newer to generate and unfold models, but it wasn't found on this system.",
+    title: "No Python environment could be set up",
+    body: "FoldQuery first tries its bundled environment (micromamba), then your system Python. Neither produced a working CadQuery environment. Installing Python 3.11+ below lets the fallback path work.",
   },
   "python-version": {
     title: "Python version is too old",
-    body: "FoldQuery needs Python 3.11 or newer, but an older version was found. Please install a supported version.",
+    body: "FoldQuery needs Python 3.11 or newer, but an older version was found. Please install a supported version (the bundled micromamba environment was also unavailable).",
   },
   venv: {
     title: "The Python venv module is missing",
-    body: "FoldQuery creates an isolated environment with the `venv` module. On some Linux distributions you may need to install the `python3-venv` package.",
+    body: "The fallback path creates an isolated environment with the `venv` module. On some Linux distributions you may need to install the `python3-venv` package.",
   },
   pip: {
     title: "The Python pip module is missing",
-    body: "FoldQuery installs CadQuery with `pip`, but it isn't available in the detected Python. Please install it (e.g. `python3 -m ensurepip`).",
+    body: "The fallback path installs CadQuery with `pip`, but it isn't available in the detected Python. Please install it (e.g. `python3 -m ensurepip`).",
   },
 };
 

@@ -46,3 +46,11 @@
 .setup-error .setup-message {
   margin-top: 12px;
 }
+
+.setup-source-note {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--fq-border);
+  color: var(--fq-text-muted);
+  font-size: 13px;
+}

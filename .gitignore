@@ -37,3 +37,6 @@ src-tauri/gen/schemas
 # OS
 .DS_Store
 Thumbs.db
+
+# Bundled sidecar binaries (fetched at build time)
+src-tauri/binaries

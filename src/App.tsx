@@ -25,6 +25,7 @@ import PythonSetupModal, { type SetupStep } from "./components/python/PythonSetu
 import PythonErrorModal from "./components/python/PythonErrorModal";
 import type { ProjectData, ProjectInfo } from "./types/project";
 import type {
+  EnvSource,
   MissingComponent,
   ScriptResult,
   SetupProgressEvent,
@@ -58,6 +59,7 @@ function App() {
   const [phase, setPhase] = useState<PythonPhase>("checking");
   const [missing, setMissing] = useState<MissingComponent | null>(null);
   const [systemPython, setSystemPython] = useState<string | null>(null);
+  const [envSource, setEnvSource] = useState<EnvSource>("none");
   const [setupSteps, setSetupSteps] = useState<SetupStep[]>([]);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [setupAttempt, setSetupAttempt] = useState(0);
@@ -265,6 +267,10 @@ function App() {
 
   const runSetup = useCallback(async () => {
     setPhase("setup");
+    // Provisioning always tries the bundled micromamba environment first, so
+    // the modal should say what is actually happening rather than reflecting
+    // the pre-check (which only saw that system Python exists).
+    setEnvSource("micromamba");
     setSetupError(null);
     setSetupSteps([]);
     try {
@@ -297,6 +303,7 @@ function App() {
       const status = await invoke<SetupStatus>("check_python_setup");
       if (disposed) return;
 
+      setEnvSource(status.envSource);
       if (status.ready) {
         setPhase("ready");
       } else if (status.missing) {
@@ -393,13 +400,14 @@ function App() {
   return (
     <div className="app">
       {phase === "checking" && (
-        <PythonSetupModal checking steps={[]} error={null} onRetry={() => {}} onExit={exitApp} />
+        <PythonSetupModal checking steps={[]} error={null} envSource={envSource} onRetry={() => {}} onExit={exitApp} />
       )}
       {phase === "setup" && (
         <PythonSetupModal
           checking={false}
           steps={setupSteps}
           error={setupError}
+          envSource={envSource}
           onRetry={() => setSetupAttempt((a) => a + 1)}
           onExit={exitApp}
         />

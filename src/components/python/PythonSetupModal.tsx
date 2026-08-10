@@ -1,5 +1,6 @@
 import { Alert, Button, Modal, Spin } from "antd";
 import { CheckOutlined } from "@ant-design/icons";
+import type { EnvSource } from "../../types/python";
 import "./PythonSetupModal.css";
 
 export interface SetupStep {
@@ -12,17 +13,33 @@ interface PythonSetupModalProps {
   checking: boolean;
   steps: SetupStep[];
   error: string | null;
+  envSource: EnvSource;
   onRetry: () => void;
   onExit: () => void;
 }
 
-function PythonSetupModal({ checking, steps, error, onRetry, onExit }: PythonSetupModalProps) {
+/** Human-readable label for the active environment source. */
+export function envSourceLabel(envSource: EnvSource): string {
+  switch (envSource) {
+    case "micromamba":
+      return "Preparing the bundled environment (micromamba).";
+    case "venv":
+      return "Using your existing environment.";
+    case "system":
+      return "Using your system Python as a fallback (micromamba unavailable).";
+    default:
+      return "";
+  }
+}
+
+function PythonSetupModal({ checking, steps, error, envSource, onRetry, onExit }: PythonSetupModalProps) {
   const active = steps.find((s) => !s.done);
+  const sourceNote = envSourceLabel(envSource);
 
   return (
     <Modal
       open
-      title="Python environment"
+      title="Environment"
       closable={false}
       mask={{ closable: false }}
       keyboard={false}
@@ -43,12 +60,15 @@ function PythonSetupModal({ checking, steps, error, onRetry, onExit }: PythonSet
       {checking ? (
         <div className="setup-center">
           <Spin size="large" />
-          <p className="setup-message">Checking Python environment…</p>
+          <p className="setup-message">Checking environment…</p>
         </div>
       ) : error ? (
         <div className="setup-error">
-          <Alert type="error" showIcon message="Python setup failed" description={error} />
-          <p className="setup-message">You can retry, or exit and fix the environment manually.</p>
+          <Alert type="error" showIcon message="Environment setup failed" description={error} />
+          <p className="setup-message">
+            Micromamba provisioning was tried first, then your system Python. You can retry, or
+            exit and fix the environment manually.
+          </p>
         </div>
       ) : (
         <div className="setup-steps">
@@ -60,7 +80,8 @@ function PythonSetupModal({ checking, steps, error, onRetry, onExit }: PythonSet
               <span className="setup-step-message">{s.message}</span>
             </div>
           ))}
-          {active && <p className="setup-message">This can take a few minutes on first run.</p>}
+          {sourceNote && <p className="setup-source-note">{sourceNote}</p>}
+          {active && <p className="setup-message">This only happens once — future launches are instant.</p>}
         </div>
       )}
     </Modal>
