@@ -1,6 +1,6 @@
 [package]
 name = "foldquery"
-version = "0.2.0"
+version = "0.2.1"
 description = "Convert 3D models into papercraft templates"
 authors = ["asener"]
 edition = "2021"
